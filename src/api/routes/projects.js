@@ -8,4 +8,8 @@ module.exports = {
       .then((data) => res.json(data))
       .catch(next);
   },
+
+  'projects#delete': (req, res, next) => {
+    projectsService.deleteProject(req.params.projectUuid).catch(next);
+  },
 };

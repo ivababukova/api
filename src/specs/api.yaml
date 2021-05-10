@@ -443,10 +443,10 @@ paths:
             application/json:
               schema:
                 $ref: ./models/api-body-schemas/Project.v1.yaml
-        '415':
-          description: Unsupported Media Type
         '404':
           description: Invalid projectUuid.
+        '415':
+          description: Unsupported Media Type
       description: Create or update a project
       requestBody:
         content:
@@ -454,6 +454,16 @@ paths:
             schema:
               $ref: ./models/api-body-schemas/Project.v1.yaml
         description: The new configuration to update the old one by.
+      parameters: []
+    delete:
+      summary: ''
+      operationId: deleteProject
+      x-eov-operation-id: projects#delete
+      x-eov-operation-handler: routes/projects
+      responses:
+        '200':
+          description: OK
+      description: Deletes a project with the provided projectUuid
   '/projects/{projectUuid}/samples':
     parameters:
       - schema:

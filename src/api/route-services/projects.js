@@ -31,6 +31,20 @@ class ProjectsService {
 
     return prettyData.projects;
   }
+
+  async deleteProject(projectUuid) {
+    const key = convertToDynamoDbRecord({
+      projectUuid,
+    });
+
+    const params = {
+      TableName: this.tableName,
+      Key: key,
+    };
+
+    const dynamodb = createDynamoDbInstance();
+    await dynamodb.deleteItem(params).promise();
+  }
 }
 
 
