@@ -12,4 +12,8 @@ module.exports = {
   'projects#delete': (req, res, next) => {
     projectsService.deleteProject(req.params.projectUuid).catch(next);
   },
+
+  'projects#get': (req, res, next) => {
+    projectsService.getProjects().then((response) => res.json(response)).catch(next);
+  },
 };

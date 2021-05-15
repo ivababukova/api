@@ -45,6 +45,22 @@ class ProjectsService {
     const dynamodb = createDynamoDbInstance();
     await dynamodb.deleteItem(params).promise();
   }
+
+  async getProjects() {
+    const params = {
+      TableName: this.tableName,
+    };
+    const dynamodb = createDynamoDbInstance();
+    const response = await dynamodb.scan(params).promise();
+
+    const projects = [];
+    response.Items.forEach((item) => {
+      const project = convertToJsObject(item);
+      projects.push(project.projects);
+    });
+    console.log('RETURNING PROJECTS', projects);
+    return projects;
+  }
 }
 
 

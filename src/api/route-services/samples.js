@@ -10,20 +10,21 @@ class SamplesService {
   }
 
   async getSamples(projectUuid) {
+    console.log('GETTING SAMPLES ', projectUuid);
     const params = {
       TableName: this.tableName,
-      KeyConditionExpression: 'projectUuid = :projectUuid',
+      FilterExpression: 'projectUuid = :projectUuid',
       ExpressionAttributeValues: {
         ':projectUuid': { S: projectUuid },
       },
-      ProjectionExpression: 'samples',
     };
+
     const dynamodb = createDynamoDbInstance();
 
-    const response = await dynamodb.query(params).promise();
-
-    if (response.Item) {
-      const prettyResponse = convertToJsObject(response.Item);
+    const response = await dynamodb.scan(params).promise();
+    if (response.Items) {
+      const prettyResponse = response.Items.map((item) => convertToJsObject(item));
+      console.log('RETURNING SAMPLES ', prettyResponse);
       return prettyResponse;
     }
 
@@ -75,6 +76,20 @@ class SamplesService {
     const prettyData = convertToJsObject(result.Attributes);
 
     return prettyData.samples;
+  }
+
+  async deleteSamples(projectUuid) {
+    const key = convertToDynamoDbRecord({
+      projectUuid,
+    });
+
+    const params = {
+      TableName: this.tableName,
+      Key: key,
+    };
+
+    const dynamodb = createDynamoDbInstance();
+    await dynamodb.deleteItem(params).promise();
   }
 }
 

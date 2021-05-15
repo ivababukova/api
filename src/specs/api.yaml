@@ -457,13 +457,29 @@ paths:
       parameters: []
     delete:
       summary: ''
-      operationId: deleteProject
       x-eov-operation-id: projects#delete
+      x-eov-operation-handler: routes/projects
+      operationId: delete-projects-projectUuid
+      responses:
+        '200':
+          description: OK
+      description: Deletes a project
+  '/projects':
+    get:
+      summary: ''
+      operationId: getProjects
+      x-eov-operation-id: projects#get
       x-eov-operation-handler: routes/projects
       responses:
         '200':
           description: OK
-      description: Deletes a project with the provided projectUuid
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ./models/api-body-schemas/Project.v1.yaml
+      description: Get the projects
   '/projects/{projectUuid}/samples':
     parameters:
       - schema:
