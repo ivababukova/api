@@ -10,7 +10,9 @@ module.exports = {
   },
 
   'projects#delete': (req, res, next) => {
-    projectsService.deleteProject(req.params.projectUuid).catch(next);
+    projectsService.deleteProject(req.params.projectUuid)
+      .then((data) => res.json(data))
+      .catch(next);
   },
 
   'projects#get': (req, res, next) => {

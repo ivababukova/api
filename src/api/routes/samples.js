@@ -8,13 +8,18 @@ module.exports = {
       .then((data) => res.json(data))
       .catch(next);
   },
+  'samples#getSamplesByExperimentId': (req, res, next) => {
+    samplesService.getSamplesByExperimentId(req.params.experimentId)
+      .then((data) => res.json(data))
+      .catch(next);
+  },
   'samples#update': (req, res, next) => {
     const { body, params: { projectUuid } } = req;
-    console.log('UPDATING IN API ', req.params.projectUuid);
     samplesService.updateSamples(projectUuid, body)
       .then((data) => res.json(data))
       .catch(next);
   },
+
   // 'samples#delete': (req, res, next) => {
   //   samplesService.deleteSamples(req.params.projectUuid).catch(next);
   // },

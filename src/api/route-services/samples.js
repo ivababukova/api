@@ -1,7 +1,10 @@
+const { NotFoundError, OK } = require('../../utils/responses');
+
 const config = require('../../config');
 const {
   createDynamoDbInstance, convertToJsObject, convertToDynamoDbRecord,
 } = require('../../utils/dynamoDb');
+const logger = require('../../utils/logging');
 
 
 class SamplesService {
@@ -28,18 +31,19 @@ class SamplesService {
       return prettyResponse;
     }
 
-    throw Error('Sample not found');
+    throw new NotFoundError('Samples not found');
   }
 
-  async getSampleIds(experimentId) {
-    const key = convertToDynamoDbRecord({
+  async getSamplesByExperimentId(experimentId) {
+    logger.log(`Gettings samples using experimentId : ${experimentId}`);
+    const marshalledKey = convertToDynamoDbRecord({
       experimentId,
     });
 
     const params = {
       TableName: this.tableName,
-      Key: key,
-      ProjectionExpression: 'samples.ids',
+      Key: marshalledKey,
+      ProjectionExpression: 'samples',
     };
     const dynamodb = createDynamoDbInstance();
 
@@ -50,46 +54,62 @@ class SamplesService {
       return prettyResponse;
     }
 
-    throw Error('Sample not found');
+    throw new NotFoundError('Samples not found');
   }
 
   async updateSamples(projectUuid, body) {
+    logger.log(`Updating samples for project ${projectUuid} and expId ${body.experimentId}`);
+
+    const marshalledKey = convertToDynamoDbRecord({
+      experimentId: body.experimentId,
+    });
+
     const marshalledData = convertToDynamoDbRecord({
       ':samples': body.samples,
       ':projectUuid': projectUuid,
     });
 
+
     // Update samples
     const params = {
       TableName: this.tableName,
-      Key: {
-        experimentId: { S: body.experimentId },
-      },
+      Key: marshalledKey,
       UpdateExpression: 'SET samples = :samples, projectUuid = :projectUuid',
       ExpressionAttributeValues: marshalledData,
-      ReturnValues: 'UPDATED_NEW',
     };
 
     const dynamodb = createDynamoDbInstance();
-    const result = await dynamodb.updateItem(params).promise();
 
-    const prettyData = convertToJsObject(result.Attributes);
-
-    return prettyData.samples;
+    try {
+      await dynamodb.updateItem(params).send();
+      return OK();
+    } catch (e) {
+      if (e.statusCode === 404) throw NotFoundError('Project not found');
+      throw e;
+    }
   }
 
-  async deleteSamples(projectUuid) {
-    const key = convertToDynamoDbRecord({
-      projectUuid,
+  async deleteSamples(projectUuid, experimentId) {
+    logger.log(`Deleting sample for project ${projectUuid} and expId ${experimentId}`);
+
+    const marshalledKey = convertToDynamoDbRecord({
+      experimentId,
     });
 
     const params = {
       TableName: this.tableName,
-      Key: key,
+      Key: marshalledKey,
     };
 
     const dynamodb = createDynamoDbInstance();
-    await dynamodb.deleteItem(params).promise();
+
+    try {
+      await dynamodb.deleteItem(params).send();
+      return OK();
+    } catch (e) {
+      if (e.statusCode === 404) throw NotFoundError('Project not found');
+      throw e;
+    }
   }
 }
 
