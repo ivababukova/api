@@ -191,12 +191,12 @@ class ProjectsService {
     const dynamodb = createDynamoDbInstance();
 
     try {
-      const { experiments, samples: sampleUuids } = await this.getProject(projectUuid);
+      const { experiments } = await this.getProject(projectUuid);
 
       if (experiments.length > 0) {
         const deletePromises = experiments.reduce((acc, experimentId) => {
           acc.push(experimentService.deleteExperiment(experimentId));
-          acc.push(samplesService.deleteSamplesEntry(projectUuid, experimentId, sampleUuids));
+          acc.push(samplesService.deleteSamples(projectUuid, experimentId));
           return acc;
         }, []);
 
