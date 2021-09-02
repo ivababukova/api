@@ -1,0 +1,25 @@
+title: Sample
+description: A sample diff
+type: object
+properties:
+  name:
+    type: string
+  species:
+    nullable: true
+    type: string
+  createdDate:
+    type: string
+  lastModified:
+    nullable: true
+    type: string
+  complete:
+    type: boolean
+  error:
+    type: boolean
+  fileNames:
+    type: array
+    items:
+      type: string
+  files:
+    type: object
+additionalProperties: false

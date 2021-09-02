@@ -2,7 +2,7 @@ const _ = require('lodash');
 
 const dbConn = require('../../db/conn');
 
-const { NotFoundError, OK } = require('../../utils/responses');
+const { NotFoundError, MethodNotAllowedError, OK } = require('../../utils/responses');
 
 const { undefinedIfNotFound } = require('./utils');
 
@@ -13,6 +13,17 @@ const {
 const AWS = require('../../utils/requireAWS');
 
 const logger = require('../../utils/logging');
+
+const attributesThatCantChange = ['projectUuid', 'uuid'];
+
+const mappingsNameToSQL = {
+  name: 'name',
+  species: 'species',
+  createdDate: 'created_at',
+  lastModified: 'updated_at',
+  complete: 'complete',
+  error: 'error',
+};
 
 class SamplesService {
   constructor() {
@@ -109,13 +120,29 @@ class SamplesService {
     }
   }
 
+  async updateSample(projectUuid, sampleUuid, diff) {
+    logger.log(`Updating sample ${sampleUuid} for project ${projectUuid}`);
+
+    const db = await dbConn;
+
+    _.mapKeys(diff, (value, key) => mappingsNameToSQL[key]);
+
+    const diffMappedToSQL = diff;
+
+    await db(this.SQLSamplesTableName)
+      .where('sample_uuid', sampleUuid)
+      .update(diffMappedToSQL);
+
+    return OK();
+  }
+
   async deleteSamplesFromS3(projectUuid, samplesToRemoveUuids, allSamples) {
     const s3 = new AWS.S3();
 
     const sampleObjectsToDelete = samplesToRemoveUuids.map((sampleUuid) => {
       const fileKeysToDelete = Object.keys(allSamples[sampleUuid].files);
 
-      return fileKeysToDelete.map((fileKey) => ({ Key: `${projectUuid}/${sampleUuid}/${fileKey}` }));
+      return fileKeysToDelete.map((fileKey) => ({ Key: `${projectUuid} / ${sampleUuid} / ${fileKey}` }));
     });
 
     const s3Params = {
@@ -134,7 +161,7 @@ class SamplesService {
   }
 
   async removeSamples(projectUuid, experimentId, sampleUuids) {
-    logger.log(`Removing samples in an entry for project ${projectUuid} and expId ${experimentId}`);
+    logger.log(`Removing samples in an entry for project ${projectUuid} and expId ${experimentId} `);
 
     const db = await dbConn;
 
@@ -159,7 +186,7 @@ class SamplesService {
   }
 
   async deleteSamplesEntry(projectUuid, experimentId, sampleUuids) {
-    logger.log(`Deleting samples entry for project ${projectUuid} and expId ${experimentId}`);
+    logger.log(`Deleting samples entry for project ${projectUuid} and expId ${experimentId} `);
 
     const { samples: allSamples = {} } = await undefinedIfNotFound(
       this.getSamplesByExperimentId(experimentId),

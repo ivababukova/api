@@ -13,10 +13,17 @@ module.exports = {
       .then((data) => res.json(data))
       .catch(next);
   },
-  'samples#update': (req, res, next) => {
+  'samples#set': (req, res, next) => {
     const { body, params: { projectUuid } } = req;
 
     samplesService.updateSamples(projectUuid, body)
+      .then((data) => res.json(data))
+      .catch(next);
+  },
+  'samples#update': (req, res, next) => {
+    const { body, params: { projectUuid, sampleUuid } } = req;
+
+    samplesService.updateSample(projectUuid, sampleUuid, body)
       .then((data) => res.json(data))
       .catch(next);
   },

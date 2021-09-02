@@ -1073,7 +1073,7 @@ paths:
     put:
       summary: Update samples
       operationId: updateSamples
-      x-eov-operation-id: samples#update
+      x-eov-operation-id: samples#set
       x-eov-operation-handler: routes/samples
       responses:
         '200':
@@ -1145,6 +1145,44 @@ paths:
           application/json:
             schema:
               $ref: ./models/samples-bodies/SamplesRemoveBody.v1.yaml
+  '/projects/{projectUuid}/samples/{sampleUuid}':
+    patch:
+      summary: Update sample
+      description: Updates a sample's data
+      operationId: updateSample
+      x-eov-operation-id: samples#update
+      x-eov-operation-handler: routes/samples
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPSuccess.v1.yaml
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPError.v1.yaml
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPError.v1.yaml
+        '415':
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPError.v1.yaml
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: ./models/samples-bodies/SampleUpdateDiffBody.v1.yaml
+  
   /projects:
     get:
       summary: Get the list of projects
