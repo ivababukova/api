@@ -11,6 +11,15 @@ module.exports = {
     // expressAuthorizationMiddleware,
     (req, res, next) => next(),
     (req, res, next) => {
+      metadataTracksService.getMetadataTrack(req.params.metadataTrackUuid)
+        .then((response) => res.json(response))
+        .catch(next);
+    },
+  ],
+  'metadataTracks#getByProject': [
+    // expressAuthorizationMiddleware,
+    (req, res, next) => next(),
+    (req, res, next) => {
       metadataTracksService.getMetadataTracks(req.params.projectUuid)
         .then((response) => res.json(response))
         .catch(next);

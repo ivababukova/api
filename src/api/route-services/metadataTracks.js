@@ -12,6 +12,28 @@ class MetadataTracksService {
     this.metadataTracksValuesTableName = 'metadata_tracks_values';
   }
 
+  async getMetadataTrack(metadataTrackUuid) {
+    const db = await dbConn;
+
+    const dbResponse = await db(`${this.metadataTracksTableName} as meta`)
+      .where('meta.metadata_uuid', metadataTrackUuid)
+      .join(`${this.metadataTracksValuesTableName} as meta_val`, 'meta_val.metadata_uuid', '=', 'meta.metadata_uuid')
+      .select(
+        'meta.metadata_uuid as metaId',
+        'meta.name as name',
+        'meta_val.sample_uuid as sampleUuid',
+        'meta_val.value as sampleMetaValue',
+      );
+
+    const valuesPerSample = dbResponse.reduce((acum, current) => {
+      acum[current.sampleUuid] = current.sampleMetaValue;
+
+      return acum;
+    }, {});
+
+    return { name: dbResponse[0].name, valuesPerSample };
+  }
+
   async getMetadataTracks(projectUuid) {
     const db = await dbConn;
 
@@ -28,10 +50,6 @@ class MetadataTracksService {
         'sample.sample_uuid as sampleUuid',
         'meta_val.value as sampleMetaValue',
       );
-
-    console.log('dbResponseDebug');
-    console.log(JSON.stringify(dbResponse));
-
 
     const response = dbResponse.reduce((acum, current) => {
       const currentMetaId = current.metaId;
@@ -53,9 +71,6 @@ class MetadataTracksService {
 
       return acum;
     }, {});
-
-    console.log('responseDebug');
-    console.log(response);
 
     return response;
   }

@@ -881,7 +881,7 @@ paths:
       summary: Get metadata tracks under a project
       description: Get metadata tracks under a project
       operationId: getMetadataTracks
-      x-eov-operation-id: metadataTracks#get
+      x-eov-operation-id: metadataTracks#getByProject
       x-eov-operation-handler: routes/metadataTracks
       responses:
         '200':
@@ -892,6 +892,37 @@ paths:
                 type: object
                 additionalProperties:
                   $ref: ./models/api-body-schemas/MetadataTrack.v1.yaml
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPError.v1.yaml
+  '/projects/{projectUuid}/metadataTracks/{metadataTrackUuid}':
+    parameters:
+      - name: projectUuid
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: metadataTrackUuid
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a metadata track
+      description: Get a metadata track
+      operationId: getMetadataTrack
+      x-eov-operation-id: metadataTracks#get
+      x-eov-operation-handler: routes/metadataTracks
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: ./models/api-body-schemas/MetadataTrack.v1.yaml
         '404':
           description: Not Found
           content:
