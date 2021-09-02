@@ -2,24 +2,39 @@ const config = require('../../config');
 const {
   createDynamoDbInstance, convertToDynamoDbRecord, convertToJsObject,
 } = require('../../utils/dynamoDb');
+
+const dbConn = require('../../db/conn');
 const logger = require('../../utils/logging');
 
 const { OK, NotFoundError } = require('../../utils/responses');
-const safeBatchGetItem = require('../../utils/safeBatchGetItem');
-
-const SamplesService = require('./samples');
 const ExperimentService = require('./experiment');
 
-const samplesService = new SamplesService();
 const experimentService = new ExperimentService();
 
 class ProjectsService {
   constructor() {
     this.tableName = `projects-${config.clusterEnv}`;
+    this.newTableName = 'projects';
   }
 
+  // TODO get it to work
   async getProject(projectUuid) {
+    const db = await dbConn;
+
     logger.log(`Getting project item with id ${projectUuid}`);
+
+    const projects = await db('projects')
+      .where('project_uuid', projectUuid)
+      .select('*');
+
+    console.log('hahaha', projects);
+
+    if (!projects.length) {
+      logger.log(`Project ${projectUuid} not found`);
+      throw new NotFoundError('Project not found.');
+    }
+
+
     const marshalledKey = convertToDynamoDbRecord({
       projectUuid,
     });
@@ -36,36 +51,30 @@ class ProjectsService {
       return prettyResponse.projects;
     }
 
-    logger.log(`Project ${projectUuid} not found`);
+
     return response;
   }
 
+  // TODO make it work with samples/experiments
   async updateProject(projectUuid, project) {
     logger.log(`Updating project with id ${projectUuid}`);
-    const marshalledKey = convertToDynamoDbRecord({
-      projectUuid,
-    });
 
-    const marshalledData = convertToDynamoDbRecord({
-      ':project': project,
-    });
+    const { name, description } = project;
 
-    const params = {
-      TableName: this.tableName,
-      Key: marshalledKey,
-      UpdateExpression: 'SET projects = :project',
-      ExpressionAttributeValues: marshalledData,
-    };
+    const db = await dbConn;
 
-    const dynamodb = createDynamoDbInstance();
+    const numChanged = await db(this.newTableName)
+      .where({ project_uuid: projectUuid })
+      .update({
+        name,
+        description,
+      });
 
-    try {
-      await dynamodb.updateItem(params).send();
-      return OK();
-    } catch (e) {
-      if (e.statusCode === 400) throw new NotFoundError('Project not found');
-      throw e;
+    if (numChanged === 0) {
+      throw new NotFoundError('Project not found');
     }
+
+    return OK();
   }
 
   /**
@@ -75,86 +84,76 @@ class ProjectsService {
     if (!user) {
       return [];
     }
-    // Get project data from the experiments table. Only return
-    // those tables that have a project ID associated with them.
-    const params = {
-      TableName: experimentService.experimentsTableName,
-      FilterExpression: 'attribute_exists(projectId) and contains(#rbac_can_write, :userId)',
-      ExpressionAttributeNames: {
-        '#pid': 'projectId',
-        '#rbac_can_write': 'rbac_can_write',
-      },
-      ExpressionAttributeValues: {
-        ':userId': { S: user.sub },
-      },
-      ProjectionExpression: '#pid',
-    };
 
-    const dynamodb = createDynamoDbInstance();
+    const db = await dbConn;
+    let response;
+    await db.transaction(async (trx) => {
+      const projects = await trx(this.newTableName)
+        .select(
+          'name',
+          'description',
+          db.raw('project_uuid as uuid'),
+        );
 
-    const response = await dynamodb.scan(params).promise();
+      if (!projects.length) {
+        throw new NotFoundError('Project not found.');
+      }
 
-    if (!response.Items.length) {
-      return [];
-    }
+      const withExperiments = await Promise.all(
+        projects.map(async (project) => {
+          const experimentDetails = await trx('experiments')
+            .where('project_uuid', project.uuid)
+            .select(
+              'experiment_id',
+            );
 
-    const projectIds = response.Items.map(
-      (entry) => convertToJsObject(entry).projectId,
-    ).filter((id) => id);
+          return {
+            ...project,
+            experiments: experimentDetails.map(
+              (e) => e.experiment_id,
+            ),
+          };
+        }),
+      );
 
-    return this.getProjectsFromIds(new Set(projectIds));
-  }
+      const withSamples = await Promise.all(
+        withExperiments.map(async (project) => {
+          const experimentDetails = await trx('samples')
+            .where('project_uuid', project.uuid)
+            .select(
+              db.raw('sample_uuid as sampleUuid'),
+            );
 
-  /**
-   * Returns information about a group of projects.
-   *
-   * @param {Set} projectIds A Set of projectId values that are to be queried.
-   * @returns An object containing descriptions of projects.
-   */
-  async getProjectsFromIds(projectIds) {
-    const dynamodb = createDynamoDbInstance();
-    const params = {
-      RequestItems: {
-        [this.tableName]: {
-          Keys: [...projectIds].map((projectUuid) => convertToDynamoDbRecord({ projectUuid })),
-        },
-      },
-    };
+          return {
+            ...project,
+            samples: experimentDetails.map(
+              (e) => e.sample_uuid,
+            ),
+          };
+        }),
+      );
 
-    const data = await safeBatchGetItem(dynamodb, params);
+      await trx.commit();
 
-    const existingProjectIds = new Set(data.Responses[this.tableName].map((entry) => {
-      const newData = convertToJsObject(entry);
-      return newData.projects.uuid;
-    }));
+      response = withSamples.map((p) => {
+        const {
+          // eslint-disable-next-line camelcase
+          created_at, last_analyzed_at, updated_at, ...rest
+        } = p;
 
-
-    // Build up projects that do not exist in Dynamo yet.
-    const projects = [...projectIds]
-      .filter((entry) => (
-        !existingProjectIds.has(entry)
-      ))
-      .map((emptyProject) => {
-        const newProject = {};
-
-        const id = emptyProject;
-        newProject.name = id;
-        newProject.uuid = id;
-        newProject.samples = [];
-        newProject.metadataKeys = [];
-        newProject.experiments = [id];
-
-        return newProject;
+        return {
+          createdDate: created_at,
+          lastAnalyzed: last_analyzed_at,
+          lastModified: updated_at,
+          ...rest,
+        };
       });
-
-    data.Responses[this.tableName].forEach((entry) => {
-      const newData = convertToJsObject(entry);
-      projects.push(newData.projects);
     });
 
-    return projects;
+    return response;
   }
 
+  // TODO needs migration
   async getExperiments(projectUuid) {
     const dynamodb = createDynamoDbInstance();
 
@@ -180,37 +179,18 @@ class ProjectsService {
 
   async deleteProject(projectUuid) {
     logger.log(`Deleting project with id ${projectUuid}`);
-    const marshalledKey = convertToDynamoDbRecord({
-      projectUuid,
-    });
 
-    const params = {
-      TableName: this.tableName,
-      Key: marshalledKey,
-    };
+    const db = await dbConn;
 
-    const dynamodb = createDynamoDbInstance();
+    const numDeleted = await db(this.newTableName)
+      .where({ project_uuid: projectUuid })
+      .del();
 
-    try {
-      const { experiments, samples: sampleUuids } = await this.getProject(projectUuid);
-
-      if (experiments.length > 0) {
-        const deletePromises = experiments.reduce((acc, experimentId) => {
-          acc.push(experimentService.deleteExperiment(experimentId));
-          acc.push(samplesService.deleteSamplesEntry(projectUuid, experimentId, sampleUuids));
-          return acc;
-        }, []);
-
-        await Promise.all(deletePromises);
-      }
-
-      await dynamodb.deleteItem(params).send();
-
-      return OK();
-    } catch (e) {
-      if (e.statusCode === 400) throw new NotFoundError('Project not found');
-      throw e;
+    if (numDeleted === 0) {
+      throw new NotFoundError('Project not found');
     }
+
+    return OK();
   }
 }
 

@@ -3,12 +3,14 @@ require('log-timestamp');
 const express = require('express');
 const expressLoader = require('./loaders/express');
 const cacheLoader = require('./loaders/cache');
+const dbLoader = require('./loaders/db');
 const config = require('./config');
 const logger = require('./utils/logging');
 
 async function startServer() {
   const { app, server, socketIo: io } = await expressLoader(express());
   await cacheLoader(io);
+  await dbLoader();
 
   app.set('io', io);
 
