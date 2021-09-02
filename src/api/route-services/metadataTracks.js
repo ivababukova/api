@@ -26,6 +26,10 @@ class MetadataTracksService {
         'meta_val.value as sampleMetaValue',
       );
 
+    if (dbResponse.length === 0) {
+      throw new NotFoundError('Metadata track not found');
+    }
+
     const valuesPerSample = dbResponse.reduce((acum, current) => {
       acum[current.sampleUuid] = current.sampleMetaValue;
 
@@ -44,6 +48,10 @@ class MetadataTracksService {
       .select(
         'meta_val.value as value',
       );
+
+    if (dbResponse.length === 0) {
+      throw new NotFoundError('Metadata track or sample not found');
+    }
 
     return dbResponse[0].value;
   }
