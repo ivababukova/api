@@ -870,6 +870,34 @@ paths:
               schema:
                 $ref: ./models/HTTPError.v1.yaml
       description: Get all experiments under a project
+  '/projects/{projectUuid}/metadataTracks':
+    parameters:
+      - name: projectUuid
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get metadata tracks under a project
+      description: Get metadata tracks under a project
+      operationId: getMetadataTracks
+      x-eov-operation-id: metadataTracks#get
+      x-eov-operation-handler: routes/metadataTracks
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: ./models/api-body-schemas/MetadataTrack.v1.yaml
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPError.v1.yaml
   '/projects/{projectUuid}/samples':
     parameters:
       - name: projectUuid

@@ -15,7 +15,7 @@ class ProjectsService {
   constructor() {
     this.tableName = `projects-${config.clusterEnv}`;
 
-    // We should move all the table names to some file where all route services can access them
+    // TODO Move all the table names to some file where all route services can access them
     this.experimentsSQLTableName = 'experiments';
     this.SQLTableName = 'projects';
   }
@@ -161,22 +161,14 @@ class ProjectsService {
   async getExperiments(projectUuid) {
     const db = await dbConn;
 
-    let response = {};
-
-    await db.transaction(async (trx) => {
-      response = await trx(this.experimentsSQLTableName)
-        .where({
-          project_uuid: projectUuid,
-        })
-        .select(
-          'experiment_id as id',
-          'name',
-          'description',
-        );
-    });
-
-    console.log('responseDebug');
-    console.log(response);
+    const response = await db(this.experimentsSQLTableName)
+      .where({
+        project_uuid: projectUuid,
+      }).select(
+        'experiment_id as id',
+        'name',
+        'description',
+      );
 
     return response;
   }
