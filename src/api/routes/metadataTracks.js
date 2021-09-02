@@ -36,6 +36,17 @@ module.exports = {
         .catch(next);
     },
   ],
+  'metadataTracks#create': [
+    // expressAuthorizationMiddleware,
+    (req, res, next) => next(),
+    (req, res, next) => {
+      metadataTracksService.createMetadataTrack(
+        req.params.projectUuid, req.body,
+      )
+        .then((response) => res.json(response))
+        .catch(next);
+    },
+  ],
   'metadataTracks#setValueForSample': [
     // expressAuthorizationMiddleware,
     (req, res, next) => next(),

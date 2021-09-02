@@ -1,4 +1,5 @@
 /* eslint-disable no-param-reassign */
+const { v4: uuidv4 } = require('uuid');
 const dbConn = require('../../db/conn');
 const logger = require('../../utils/logging');
 
@@ -84,6 +85,40 @@ class MetadataTracksService {
 
       return acum;
     }, {});
+
+    return response;
+  }
+
+  async createMetadataTrack(projectUuid, metadataTrack) {
+    const db = await dbConn;
+
+    const { name, valuesPerSample } = metadataTrack;
+
+    const metadataTrackUuid = uuidv4();
+
+    const rowsToInsert = Object.entries(valuesPerSample)
+      .map(([sampleUuid, value]) => (
+        {
+          metadata_uuid: metadataTrackUuid,
+          sample_uuid: sampleUuid,
+          value,
+        }));
+
+    let response;
+
+    await db.transaction(async (trx) => {
+      await db(`${this.metadataTracksTableName} as meta`)
+        .insert({ project_uuid: projectUuid, metadata_uuid: metadataTrackUuid, name });
+
+
+      await db(`${this.metadataTracksValuesTableName} as meta_val`)
+        .where('meta_val.metadata_uuid', metadataTrackUuid)
+        .insert(rowsToInsert);
+
+      await trx.commit();
+
+      response = OK();
+    });
 
     return response;
   }

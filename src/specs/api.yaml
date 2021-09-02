@@ -898,6 +898,24 @@ paths:
             application/json:
               schema:
                 $ref: ./models/HTTPError.v1.yaml
+    post:
+      summary: Creates a new metadata track
+      description: Creates a new metadata track
+      operationId: createMetadataTrack
+      x-eov-operation-id: metadataTracks#create
+      x-eov-operation-handler: routes/metadataTracks
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPSuccess.v1.yaml
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: ./models/api-body-schemas/MetadataTrack.v1.yaml
   '/projects/{projectUuid}/metadataTracks/{metadataTrackUuid}':
     parameters:
       - name: projectUuid
@@ -965,7 +983,7 @@ paths:
             application/json:
               schema:
                 $ref: ./models/HTTPError.v1.yaml
-    post:
+    put:
       summary: Set a metadata track value
       description: Set a metadata track value for a sample in particular
       operationId: setMetadataTrackValueForSample
