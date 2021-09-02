@@ -153,6 +153,12 @@ const getStepsFromExecutionHistory = (events) => {
      *  - steps are returned in the completion order, and are unique in the returned array
      */
 const getPipelineStatus = async (experimentId, processName) => {
+  // Mocked because we are not working locally so this causes failures
+  return {
+    [processName]: mockedCompletedStatus[processName],
+  };
+
+
   const experimentService = new ExperimentService();
 
   const pipelinesHandles = await experimentService.getPipelinesHandles(experimentId);

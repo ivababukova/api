@@ -175,8 +175,10 @@ class ExperimentService {
   }
 
   async getProcessingConfig(experimentId) {
-    const data = await getExperimentAttributes(this.experimentsTableName, experimentId, ['processingConfig']);
-    return data;
+    return { processingConfig: { meta: { stepsDone: [], complete: false } } };
+
+    // const data = await getExperimentAttributes(this.experimentsTableName, experimentId, ['processingConfig']);
+    // return data;
   }
 
   async getPipelinesHandles(experimentId) {

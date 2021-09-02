@@ -14,7 +14,10 @@ const experimentService = new ExperimentService();
 class ProjectsService {
   constructor() {
     this.tableName = `projects-${config.clusterEnv}`;
-    this.newTableName = 'projects';
+
+    // We should move all the table names to some file where all route services can access them
+    this.experimentsSQLTableName = 'experiments';
+    this.SQLTableName = 'projects';
   }
 
   // TODO get it to work
@@ -63,7 +66,7 @@ class ProjectsService {
 
     const db = await dbConn;
 
-    const numChanged = await db(this.newTableName)
+    const numChanged = await db(this.SQLTableName)
       .where({ project_uuid: projectUuid })
       .update({
         name,
@@ -87,8 +90,9 @@ class ProjectsService {
 
     const db = await dbConn;
     let response;
+
     await db.transaction(async (trx) => {
-      const projects = await trx(this.newTableName)
+      const projects = await trx(this.SQLTableName)
         .select(
           'name',
           'description',
@@ -155,26 +159,26 @@ class ProjectsService {
 
   // TODO needs migration
   async getExperiments(projectUuid) {
-    const dynamodb = createDynamoDbInstance();
+    const db = await dbConn;
 
-    const marshalledKey = convertToDynamoDbRecord({ projectUuid });
+    let response = {};
 
-    const params = {
-      TableName: this.tableName,
-      Key: marshalledKey,
-    };
+    await db.transaction(async (trx) => {
+      response = await trx(this.experimentsSQLTableName)
+        .where({
+          project_uuid: projectUuid,
+        })
+        .select(
+          'experiment_id as id',
+          'name',
+          'description',
+        );
+    });
 
-    try {
-      const response = await dynamodb.getItem(params).promise();
-      const result = convertToJsObject(response.Item);
+    console.log('responseDebug');
+    console.log(response);
 
-      if (!Object.prototype.hasOwnProperty.call(result, 'projects')) return [];
-
-      return experimentService.getListOfExperiments(result.projects.experiments);
-    } catch (e) {
-      if (e.statusCode === 400) throw new NotFoundError('Project not found');
-      throw e;
-    }
+    return response;
   }
 
   async deleteProject(projectUuid) {
@@ -182,7 +186,7 @@ class ProjectsService {
 
     const db = await dbConn;
 
-    const numDeleted = await db(this.newTableName)
+    const numDeleted = await db(this.SQLTableName)
       .where({ project_uuid: projectUuid })
       .del();
 
