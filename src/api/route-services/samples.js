@@ -1,5 +1,7 @@
 const _ = require('lodash');
 
+const dbConn = require('../../db/conn');
+
 const { NotFoundError, OK } = require('../../utils/responses');
 
 const { undefinedIfNotFound } = require('./utils');
@@ -16,6 +18,8 @@ class SamplesService {
   constructor() {
     this.tableName = `samples-${config.clusterEnv}`;
     this.sampleFilesBucketName = `biomage-originals-${config.clusterEnv}`;
+
+    this.SQLSamplesTableName = 'samples';
   }
 
   async getSamples(projectUuid) {
@@ -132,33 +136,21 @@ class SamplesService {
   async removeSamples(projectUuid, experimentId, sampleUuids) {
     logger.log(`Removing samples in an entry for project ${projectUuid} and expId ${experimentId}`);
 
-    const marshalledKey = convertToDynamoDbRecord({
-      experimentId,
-    });
+    const db = await dbConn;
 
-    const updateExpressionList = sampleUuids.map((sampleUuid, index) => `samples.#val${index}`);
-    const expressionAttributeNames = sampleUuids.reduce((acc, sampleId, index) => {
-      acc[`#val${index}`] = sampleId;
-      return acc;
-    }, {});
+    const deleteFromSQLPromise = db(this.SQLSamplesTableName)
+      .where((builder) => builder.whereIn('sample_uuid', sampleUuids))
+      .del();
 
-    const params = {
-      TableName: this.tableName,
-      Key: marshalledKey,
-      UpdateExpression: `REMOVE ${updateExpressionList.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ReturnValues: 'ALL_NEW',
-    };
-
-    const a = await undefinedIfNotFound(
-      this.getSamplesByExperimentId(experimentId),
-    ) || {};
-
-    const { samples: allSamples = {} } = a;
+    // TODO uncomment
+    // const { samples: allSamples = {} } = await undefinedIfNotFound(
+    //   this.getSamplesByExperimentId(experimentId),
+    // ) || {};
 
     const promises = [
-      createDynamoDbInstance().updateItem(params).promise(),
-      this.deleteSamplesFromS3(projectUuid, sampleUuids, allSamples),
+      deleteFromSQLPromise,
+      // TODO uncomment
+      // this.deleteSamplesFromS3(projectUuid, sampleUuids, allSamples),
     ];
 
     await Promise.all(promises);
