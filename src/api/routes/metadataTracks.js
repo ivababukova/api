@@ -20,7 +20,9 @@ module.exports = {
     // expressAuthorizationMiddleware,
     (req, res, next) => next(),
     (req, res, next) => {
-      metadataTracksService.getMetadataTrackValueForSample(req.params.sampleUuid, req.params.metadataTrackUuid)
+      metadataTracksService.getMetadataTrackValueForSample(
+        req.params.sampleUuid, req.params.metadataTrackUuid,
+      )
         .then((response) => res.json(response))
         .catch(next);
     },
@@ -30,6 +32,17 @@ module.exports = {
     (req, res, next) => next(),
     (req, res, next) => {
       metadataTracksService.getMetadataTracksByProject(req.params.projectUuid)
+        .then((response) => res.json(response))
+        .catch(next);
+    },
+  ],
+  'metadataTracks#setValueForSample': [
+    // expressAuthorizationMiddleware,
+    (req, res, next) => next(),
+    (req, res, next) => {
+      metadataTracksService.setMetadataTrackValueForSample(
+        req.params.sampleUuid, req.params.metadataTrackUuid, req.body.value,
+      )
         .then((response) => res.json(response))
         .catch(next);
     },

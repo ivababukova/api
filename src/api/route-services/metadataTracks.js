@@ -47,7 +47,6 @@ class MetadataTracksService {
     return dbResponse[0].value;
   }
 
-
   async getMetadataTracksByProject(projectUuid) {
     const db = await dbConn;
 
@@ -87,6 +86,17 @@ class MetadataTracksService {
     }, {});
 
     return response;
+  }
+
+  async setMetadataTrackValueForSample(sampleUuid, metadataTrackUuid, value) {
+    const db = await dbConn;
+
+    await db(`${this.metadataTracksValuesTableName} as meta_val`)
+      .andWhere('meta_val.sample_uuid', sampleUuid)
+      .where('meta_val.metadata_uuid', metadataTrackUuid)
+      .update({ value });
+
+    return OK();
   }
 
   async deleteProject(projectUuid) {

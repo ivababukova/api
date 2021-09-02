@@ -965,6 +965,27 @@ paths:
             application/json:
               schema:
                 $ref: ./models/HTTPError.v1.yaml
+    post:
+      summary: Set a metadata track value
+      description: Set a metadata track value for a sample in particular
+      operationId: setMetadataTrackValueForSample
+      x-eov-operation-id: metadataTracks#setValueForSample
+      x-eov-operation-handler: routes/metadataTracks
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPSuccess.v1.yaml
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
   '/projects/{projectUuid}/samples':
     parameters:
       - name: projectUuid
