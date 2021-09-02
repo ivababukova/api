@@ -134,13 +134,12 @@ class MetadataTracksService {
     return OK();
   }
 
-  async deleteProject(projectUuid) {
-    logger.log(`Deleting project with id ${projectUuid}`);
-
+  async deleteMetadataTrack(metadataTrackUuid) {
+    logger.log(`Deleting metadata track with id ${metadataTrackUuid}`);
     const db = await dbConn;
 
-    const numDeleted = await db(this.SQLTableName)
-      .where({ project_uuid: projectUuid })
+    const numDeleted = await db(this.metadataTracksTableName)
+      .where({ metadata_uuid: metadataTrackUuid })
       .del();
 
     if (numDeleted === 0) {

@@ -58,17 +58,13 @@ module.exports = {
         .catch(next);
     },
   ],
-  // 'projects#delete': [
-  //   expressAuthorizationMiddleware,
-  //   (req, res, next) => {
-  //     projectsService.deleteProject(req.params.projectUuid)
-  //       .then((data) => res.json(data))
-  //       .catch(next);
-  //   }],
-  // 'projects#getExperiments': [
-  //   expressAuthorizationMiddleware,
-  //   (req, res, next) => {
-  //     projectsService.getExperiments(req.params.projectUuid)
-  //       .then((response) => res.json(response)).catch(next);
-  //   }],
+  'metadataTracks#delete': [
+    // expressAuthorizationMiddleware,
+    (req, res, next) => next(),
+    (req, res, next) => {
+      metadataTracksService.deleteMetadataTrack(req.params.metadataTrackUuid)
+        .then((response) => res.json(response))
+        .catch(next);
+    },
+  ],
 };

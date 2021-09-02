@@ -947,6 +947,25 @@ paths:
             application/json:
               schema:
                 $ref: ./models/HTTPError.v1.yaml
+    delete:
+      summary: Delete a metadata track
+      description: Delete a metadata track
+      operationId: deleteMetadataTrack
+      x-eov-operation-id: metadataTracks#delete
+      x-eov-operation-handler: routes/metadataTracks
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPSuccess.v1.yaml
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: ./models/HTTPError.v1.yaml
   '/projects/{projectUuid}/samples/{sampleUuid}/metadataTracks/{metadataTrackUuid}':
     parameters:
       - name: projectUuid
