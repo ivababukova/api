@@ -16,11 +16,20 @@ module.exports = {
         .catch(next);
     },
   ],
+  'metadataTracks#getValueForSample': [
+    // expressAuthorizationMiddleware,
+    (req, res, next) => next(),
+    (req, res, next) => {
+      metadataTracksService.getMetadataTrackValueForSample(req.params.sampleUuid, req.params.metadataTrackUuid)
+        .then((response) => res.json(response))
+        .catch(next);
+    },
+  ],
   'metadataTracks#getByProject': [
     // expressAuthorizationMiddleware,
     (req, res, next) => next(),
     (req, res, next) => {
-      metadataTracksService.getMetadataTracks(req.params.projectUuid)
+      metadataTracksService.getMetadataTracksByProject(req.params.projectUuid)
         .then((response) => res.json(response))
         .catch(next);
     },

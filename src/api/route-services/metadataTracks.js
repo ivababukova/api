@@ -34,7 +34,21 @@ class MetadataTracksService {
     return { name: dbResponse[0].name, valuesPerSample };
   }
 
-  async getMetadataTracks(projectUuid) {
+  async getMetadataTrackValueForSample(sampleUuid, metadataTrackUuid) {
+    const db = await dbConn;
+
+    const dbResponse = await db(`${this.metadataTracksValuesTableName} as meta_val`)
+      .andWhere('meta_val.sample_uuid', sampleUuid)
+      .where('meta_val.metadata_uuid', metadataTrackUuid)
+      .select(
+        'meta_val.value as value',
+      );
+
+    return dbResponse[0].value;
+  }
+
+
+  async getMetadataTracksByProject(projectUuid) {
     const db = await dbConn;
 
     const dbResponse = await db(`${this.metadataTracksTableName} as meta`)
